@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock · La Querencia</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a18; min-height: 100vh; }
+
+/* ── Layout ── */
+.app { display: flex; height: 100vh; }
+.sidebar { width: 220px; min-width: 220px; border-right: 1px solid #e0dfd6; padding: 1rem; display: flex; flex-direction: column; gap: 6px; background: #edecea; }
+.sidebar-logo { font-size: 15px; font-weight: 600; color: #1a1a18; padding: 4px 4px 12px; border-bottom: 1px solid #d8d7ce; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.sidebar-logo .ico { font-size: 20px; }
+.sidebar-section { font-size: 11px; font-weight: 600; color: #888780; text-transform: uppercase; letter-spacing: 0.07em; margin: 10px 0 4px; padding: 0 4px; }
+.nav-btn { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; background: transparent; text-align: left; width: 100%; transition: all .15s; font-family: inherit; font-size: 13px; font-weight: 500; color: #1a1a18; }
+.nav-btn:hover { background: #fff; border-color: #d8d7ce; }
+.nav-btn.active { background: #fff; border-color: #c8c7be; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.nav-btn .nav-ico { font-size: 15px; }
+.nav-btn .nav-count { margin-left: auto; font-size: 11px; color: #888780; background: #e0dfd6; padding: 2px 8px; border-radius: 20px; }
+.nav-btn.active .nav-count { background: #1D9E75; color: #fff; }
+.sidebar-footer { margin-top: auto; }
+.sync-btn { padding: 7px 10px; border-radius: 8px; border: 1px solid #e0dfd6; cursor: pointer; background: transparent; text-align: center; width: 100%; font-size: 11px; color: #888780; transition: all .15s; font-family: inherit; }
+.sync-btn:hover { background: #fff; color: #1a1a18; }
+
+/* ── Main ── */
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; background: #fff; }
+.topbar { padding: 1rem 1.5rem; border-bottom: 1px solid #e8e7de; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; position: sticky; top: 0; z-index: 10; }
+.topbar-left h1 { font-size: 20px; font-weight: 600; color: #1a1a18; }
+.topbar-left p { font-size: 13px; color: #888780; margin-top: 1px; }
+.topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Buttons ── */
+.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid #d8d7ce; background: #fff; cursor: pointer; font-size: 13px; font-weight: 500; color: #1a1a18; transition: all .15s; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: #f5f4f0; }
+.btn-green { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+.btn-green:hover { background: #0F6E56; border-color: #0F6E56; }
+.btn-blue { background: #185FA5; color: #fff; border-color: #185FA5; }
+.btn-blue:hover { background: #0e4070; border-color: #0e4070; }
+.btn-orange { background: #D85A30; color: #fff; border-color: #D85A30; }
+.btn-orange:hover { background: #a83e1e; border-color: #a83e1e; }
+.btn-red { background: #fff; color: #A32D2D; border-color: #f09595; }
+.btn-red:hover { background: #fcebeb; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+/* ── Stats ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 1rem 1.5rem; border-bottom: 1px solid #e8e7de; background: #fafaf8; }
+.stat-card { background: #fff; border: 1px solid #e8e7de; border-radius: 10px; padding: 14px 16px; }
+.stat-label { font-size: 11px; color: #888780; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 500; }
+.stat-val { font-size: 26px; font-weight: 600; color: #1a1a18; }
+.stat-sub { font-size: 11px; color: #b4b2a9; margin-top: 2px; }
+.stat-val.green { color: #1D9E75; }
+.stat-val.blue { color: #185FA5; }
+.stat-val.orange { color: #D85A30; }
+.stat-val.red { color: #A32D2D; }
+
+/* ── Panel ── */
+.panel { flex: 1; padding: 1.5rem; }
+.panel-hidden { display: none; }
+
+/* ── Toolbar ── */
+.list-toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.list-toolbar select, .list-toolbar input[type=text] { padding: 7px 11px; border: 1px solid #d8d7ce; border-radius: 8px; font-size: 13px; font-family: inherit; background: #fff; color: #1a1a18; outline: none; }
+.list-toolbar select:focus, .list-toolbar input[type=text]:focus { border-color: #1D9E75; }
+.list-toolbar input[type=text] { min-width: 200px; flex: 1; }
+.toolbar-spacer { flex: 1; }
+
+/* ── Table ── */
+.table-wrap { border: 1px solid #e8e7de; border-radius: 12px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: #fafaf8; color: #888780; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 10px 14px; text-align: left; border-bottom: 1px solid #e8e7de; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #f0efea; transition: background .12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #fafaf8; }
+tbody td { padding: 11px 14px; vertical-align: middle; }
+.empty-state { text-align: center; padding: 3.5rem 1rem; color: #b4b2a9; font-size: 14px; }
+.empty-ico { font-size: 36px; margin-bottom: 10px; }
+
+/* ── Badges ── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-agro { background: #E1F5EE; color: #0F6E56; }
+.badge-semilla { background: #FAEEDA; color: #854F0B; }
+.badge-entrada { background: #E6F1FB; color: #185FA5; }
+.badge-salida { background: #FCEBEB; color: #A32D2D; }
+
+/* ── Stock values ── */
+.stock-val { font-weight: 600; color: #1a1a18; }
+.stock-cero { color: #b4b2a9; font-style: italic; font-weight: 400; }
+
+/* ── Row actions ── */
+.row-actions { display: flex; gap: 5px; }
+.icon-btn { background: none; border: 1px solid transparent; border-radius: 7px; cursor: pointer; padding: 4px 8px; font-size: 14px; color: #b4b2a9; transition: all .15s; }
+.icon-btn:hover { background: #f0efea; border-color: #e0dfd6; color: #1a1a18; }
+.icon-btn.del:hover { background: #fcebeb; border-color: #f09595; color: #A32D2D; }
+
+/* ── Modal ── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(2px); padding: 1rem; }
+.modal-backdrop.hidden { display: none; }
+.modal { background: #fff; border-radius: 14px; border: 1px solid #e8e7de; padding: 1.5rem; width: 100%; max-width: 440px; box-shadow: 0 8px 32px rgba(0,0,0,.12); max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; color: #1a1a18; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; }
+.form-row { margin-bottom: 14px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.form-label { font-size: 12px; color: #888780; margin-bottom: 5px; display: block; font-weight: 500; }
+.form-input, .form-select, .form-textarea { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #d8d7ce; background: #fff; font-size: 14px; color: #1a1a18; font-family: inherit; outline: none; transition: border-color .15s; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,.1); }
+.form-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.form-input[readonly] { background: #fafaf8; color: #888780; }
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a18; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 200; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Sync dot ── */
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #b4b2a9; display: inline-block; transition: background .3s; }
+.sync-dot.online { background: #1D9E75; }
+.sync-dot.offline { background: #D85A30; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .hide-mobile { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="ico">🌾</span> La Querencia
+    <span class="sync-dot" id="sync-dot" title="Estado de conexión"></span>
+  </div>
+
+  <div class="sidebar-section">Vistas</div>
+  <button class="nav-btn active" id="nav-stock" onclick="showPanel('stock')">
+    <span class="nav-ico">📦</span> Stock actual
+    <span class="nav-count" id="nav-count-stock">—</span>
+  </button>
+  <button class="nav-btn" id="nav-movimientos" onclick="showPanel('movimientos')">
+    <span class="nav-ico">📋</span> Movimientos
+    <span class="nav-count" id="nav-count-mov">—</span>
+  </button>
+
+  <div class="sidebar-footer">
+    <button class="sync-btn" onclick="location.reload()">↺ Recargar</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="topbar-title">Stock actual</h1>
+      <p id="topbar-sub">Galpón — agroquímicos y semillas</p>
+    </div>
+    <div class="topbar-actions" id="topbar-actions">
+      <button class="btn" onclick="abrirModalMovimiento('entrada')">⬆ Entrada</button>
+      <button class="btn" onclick="abrirModalMovimiento('salida')">⬇ Salida</button>
+      <button class="btn btn-green" onclick="abrirModalProducto()">+ Producto</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Productos</div>
+      <div class="stat-val green" id="st-total">—</div>
+      <div class="stat-sub">en galpón</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Agroquímicos</div>
+      <div class="stat-val blue" id="st-agro">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Semillas</div>
+      <div class="stat-val orange" id="st-semilla">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sin stock</div>
+      <div class="stat-val red" id="st-cero">—</div>
+    </div>
+  </div>
+
+  <!-- ── Panel Stock ── -->
+  <div class="panel" id="panel-stock">
+    <div class="list-toolbar">
+      <select id="fil-cat" onchange="renderStock()">
+        <option value="">Todas las categorías</option>
+        <option value="agroquimico">Agroquímicos</option>
+        <option value="semilla">Semillas</option>
+      </select>
+      <input type="text" id="fil-buscar" placeholder="Buscar producto..." oninput="renderStock()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Unidad</th>
+            <th>Stock</th>
+            <th class="hide-mobile">Último mov.</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-stock">
+          <tr><td colspan="6"><div class="empty-state">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Panel Movimientos ── -->
+  <div class="panel panel-hidden" id="panel-movimientos">
+    <div class="list-toolbar">
+      <select id="fil-tipo" onchange="renderMovimientos()">
+        <option value="">Entradas y salidas</option>
+        <option value="entrada">Solo entradas</option>
+        <option value="salida">Solo salidas</option>
+      </select>
+      <select id="fil-cat-mov" onchange="renderMovimientos()">
+        <option value="">Todas las categorías</option>
+        <option value="agroquimico">Agroquímicos</option>
+        <option value="semilla">Semillas</option>
+      </select>
+      <input type="text" id="fil-buscar-mov" placeholder="Buscar..." oninput="renderMovimientos()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th class="hide-mobile">Observación</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody-movimientos">
+          <tr><td colspan="6"><div class="empty-state">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── Modal Producto ── -->
+<div class="modal-backdrop hidden" id="modal-producto">
+  <div class="modal">
+    <div class="modal-title" id="mp-titulo">Nuevo producto</div>
+    <div class="form-row">
+      <label class="form-label">Nombre *</label>
+      <input class="form-input" type="text" id="mp-nombre" placeholder="Ej: Glifosato 48%, Soja RR">
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Categoría *</label>
+        <select class="form-select" id="mp-cat">
+          <option value="agroquimico">Agroquímico</option>
+          <option value="semilla">Semilla</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Unidad *</label>
+        <select class="form-select" id="mp-unidad">
+          <option value="L">L (litros)</option>
+          <option value="cc">cc</option>
+          <option value="kg">kg</option>
+          <option value="bolsa">bolsa</option>
+          <option value="un">unidad</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" id="mp-stock-row">
+      <label class="form-label">Stock inicial</label>
+      <input class="form-input" type="number" id="mp-stock" placeholder="0" min="0" step="any">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Observaciones</label>
+      <textarea class="form-textarea" id="mp-obs" placeholder="Marca, proveedor, notas..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-green" onclick="guardarProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Movimiento ── -->
+<div class="modal-backdrop hidden" id="modal-movimiento">
+  <div class="modal">
+    <div class="modal-title" id="mm-titulo">Registrar entrada</div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Tipo *</label>
+        <select class="form-select" id="mm-tipo" onchange="actualizarTituloMov()">
+          <option value="entrada">⬆ Entrada</option>
+          <option value="salida">⬇ Salida</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Fecha *</label>
+        <input class="form-input" type="date" id="mm-fecha">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Categoría (filtro)</label>
+      <select class="form-select" id="mm-cat-fil" onchange="filtrarProductosMov()">
+        <option value="">Todas</option>
+        <option value="agroquimico">Agroquímicos</option>
+        <option value="semilla">Semillas</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Producto *</label>
+      <select class="form-select" id="mm-producto" onchange="autoUnidad()">
+        <option value="">— Seleccioná un producto —</option>
+      </select>
+    </div>
+    <div class="form-row-2">
+      <div>
+        <label class="form-label">Cantidad *</label>
+        <input class="form-input" type="number" id="mm-cantidad" placeholder="0" min="0.01" step="any">
+      </div>
+      <div>
+        <label class="form-label">Unidad</label>
+        <input class="form-input" type="text" id="mm-unidad" placeholder="auto" readonly>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Observación / Detalle</label>
+      <textarea class="form-textarea" id="mm-obs" placeholder="Remito, motivo, campo destino..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModal('modal-movimiento')">Cancelar</button>
+      <button class="btn btn-green" id="mm-btn" onclick="guardarMovimiento()">Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Editar Movimiento ── -->
+<div class="modal-backdrop hidden" id="modal-edit-mov">
+  <div class="modal">
+    <div class="modal-title">Editar movimiento</div>
+    <div class="form-row">
+      <label class="form-label">Fecha *</label>
+      <input class="form-input" type="date" id="em-fecha">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Cantidad *</label>
+      <input class="form-input" type="number" id="em-cantidad" min="0.01" step="any">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Observación</label>
+      <textarea class="form-textarea" id="em-obs"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="cerrarModal('modal-edit-mov')">Cancelar</button>
+      <button class="btn btn-green" onclick="guardarEditMovimiento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getFirestore, collection, doc,
+  addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const FB = {
+  apiKey: "AIzaSyBAMLO5h6eAqYijKaUluKE6iWCk9JPB_VY",
+  authDomain: "gestion-ganadera-73e48.firebaseapp.com",
+  projectId: "gestion-ganadera-73e48",
+  storageBucket: "gestion-ganadera-73e48.firebasestorage.app",
+  messagingSenderId: "141172685645",
+  appId: "1:141172685645:web:9fd7d56426cff15a48d504"
+};
+const fapp = initializeApp(FB);
+const db   = getFirestore(fapp);
+
+// ── State ──
+let productos   = [];
+let movimientos = [];
+let editProdId  = null;
+let editMovId   = null;
+
+// ── Helpers ──
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function hoy() { return new Date().toISOString().split('T')[0]; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+function dot(state) {
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot ' + state;
+}
+
+// ── Navigation ──
+window.showPanel = function(id) {
+  ['stock','movimientos'].forEach(p => {
+    document.getElementById('panel-' + p).classList.toggle('panel-hidden', p !== id);
+    document.getElementById('nav-' + p).classList.toggle('active', p === id);
+  });
+  const titles = { stock: ['Stock actual','Galpón — agroquímicos y semillas'], movimientos: ['Movimientos','Historial de entradas y salidas'] };
+  document.getElementById('topbar-title').textContent = titles[id][0];
+  document.getElementById('topbar-sub').textContent   = titles[id][1];
+  const acts = document.getElementById('topbar-actions');
+  acts.style.display = id === 'stock' ? 'flex' : 'none';
+};
+
+// ── Modals ──
+window.cerrarModal = id => document.getElementById(id).classList.add('hidden');
+function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+document.querySelectorAll('.modal-backdrop').forEach(b =>
+  b.addEventListener('click', e => { if (e.target === b) b.classList.add('hidden'); })
+);
+
+// ── Render Stats ──
+function renderStats() {
+  document.getElementById('st-total').textContent   = productos.length;
+  document.getElementById('st-agro').textContent    = productos.filter(p => p.categoria === 'agroquimico').length;
+  document.getElementById('st-semilla').textContent = productos.filter(p => p.categoria === 'semilla').length;
+  document.getElementById('st-cero').textContent    = productos.filter(p => (p.stockActual||0) <= 0).length;
+  document.getElementById('nav-count-stock').textContent = productos.length;
+  document.getElementById('nav-count-mov').textContent   = movimientos.length;
+}
+
+// ── Render Stock ──
+window.renderStock = function() {
+  const catFil = document.getElementById('fil-cat').value;
+  const buscar = (document.getElementById('fil-buscar').value || '').toLowerCase();
+  let lista = productos.slice();
+  if (catFil) lista = lista.filter(p => p.categoria === catFil);
+  if (buscar) lista = lista.filter(p => p.nombre.toLowerCase().includes(buscar));
+  lista.sort((a,b) => a.nombre.localeCompare(b.nombre));
+
+  const tbody = document.getElementById('tbody-stock');
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-ico">📦</div>${buscar||catFil ? 'Sin resultados.' : 'No hay productos aún. Agregá el primero.'}</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(p => {
+    const st  = p.stockActual || 0;
+    const stTxt = st <= 0
+      ? `<span class="stock-cero">Sin stock</span>`
+      : `<span class="stock-val">${st.toLocaleString('es-AR')} <small style="color:#888780;font-weight:400">${p.unidad||''}</small></span>`;
+    const bcls = p.categoria === 'agroquimico' ? 'badge-agro' : 'badge-semilla';
+    const btxt = p.categoria === 'agroquimico' ? 'Agroquímico' : 'Semilla';
+    const ult  = p.ultimoMovimiento ? fmtFecha(p.ultimoMovimiento) : '—';
+    const obs  = p.observaciones ? `<div style="font-size:11px;color:#b4b2a9;margin-top:2px">${p.observaciones}</div>` : '';
+    return `<tr>
+      <td><strong style="font-size:13px">${p.nombre}</strong>${obs}</td>
+      <td><span class="badge ${bcls}">${btxt}</span></td>
+      <td style="color:#888780">${p.unidad||'—'}</td>
+      <td>${stTxt}</td>
+      <td class="hide-mobile" style="color:#b4b2a9;font-size:12px">${ult}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Entrada" onclick="abrirMovDesdeStock('${p.id}','entrada')">⬆</button>
+          <button class="icon-btn" title="Salida" onclick="abrirMovDesdeStock('${p.id}','salida')">⬇</button>
+          <button class="icon-btn" title="Editar" onclick="abrirEditProducto('${p.id}')">✏️</button>
+          <button class="icon-btn del" title="Eliminar" onclick="eliminarProducto('${p.id}','${p.nombre.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+// ── Render Movimientos ──
+window.renderMovimientos = function() {
+  const tipoFil = document.getElementById('fil-tipo').value;
+  const catFil  = document.getElementById('fil-cat-mov').value;
+  const buscar  = (document.getElementById('fil-buscar-mov').value || '').toLowerCase();
+  let lista = movimientos.slice();
+  if (tipoFil) lista = lista.filter(m => m.tipo === tipoFil);
+  if (catFil)  lista = lista.filter(m => m.categoriaProducto === catFil);
+  if (buscar)  lista = lista.filter(m => (m.nombreProducto||'').toLowerCase().includes(buscar) || (m.observacion||'').toLowerCase().includes(buscar));
+  lista.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+  const tbody = document.getElementById('tbody-movimientos');
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-ico">📋</div>${tipoFil||catFil||buscar ? 'Sin resultados.' : 'No hay movimientos aún.'}</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(m => {
+    const tipoBadge = m.tipo === 'entrada'
+      ? '<span class="badge badge-entrada">⬆ Entrada</span>'
+      : '<span class="badge badge-salida">⬇ Salida</span>';
+    const qty = m.cantidad != null ? `${m.cantidad.toLocaleString('es-AR')} <small style="color:#888780">${m.unidad||''}</small>` : '—';
+    const safe = (m.nombreProducto||'').replace(/'/g,"\\'");
+    const deltaRev = m.tipo === 'entrada' ? -(m.cantidad||0) : (m.cantidad||0);
+    return `<tr>
+      <td style="color:#888780;font-size:12px;white-space:nowrap">${fmtFecha(m.fecha)}</td>
+      <td>${tipoBadge}</td>
+      <td><strong style="font-size:13px">${m.nombreProducto||'—'}</strong></td>
+      <td>${qty}</td>
+      <td class="hide-mobile" style="font-size:12px;color:#888780;max-width:200px;word-break:break-word">${m.observacion||'—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" title="Editar" onclick="abrirEditMovimiento('${m.id}')">✏️</button>
+          <button class="icon-btn del" title="Eliminar" onclick="eliminarMovimiento('${m.id}','${safe}','${m.productoId||''}',${deltaRev})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+// ── Producto modal ──
+window.abrirModalProducto = function() {
+  editProdId = null;
+  document.getElementById('mp-titulo').textContent = 'Nuevo producto';
+  document.getElementById('mp-nombre').value  = '';
+  document.getElementById('mp-cat').value     = 'agroquimico';
+  document.getElementById('mp-unidad').value  = 'L';
+  document.getElementById('mp-stock').value   = '';
+  document.getElementById('mp-obs').value     = '';
+  document.getElementById('mp-stock-row').style.display = 'block';
+  abrirModal('modal-producto');
+};
+
+window.abrirEditProducto = function(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  editProdId = id;
+  document.getElementById('mp-titulo').textContent = 'Editar producto';
+  document.getElementById('mp-nombre').value  = p.nombre || '';
+  document.getElementById('mp-cat').value     = p.categoria || 'agroquimico';
+  document.getElementById('mp-unidad').value  = p.unidad || 'L';
+  document.getElementById('mp-obs').value     = p.observaciones || '';
+  document.getElementById('mp-stock-row').style.display = 'none';
+  abrirModal('modal-producto');
+};
+
+window.guardarProducto = async function() {
+  const nombre = document.getElementById('mp-nombre').value.trim();
+  const cat    = document.getElementById('mp-cat').value;
+  const unidad = document.getElementById('mp-unidad').value;
+  const stockI = parseFloat(document.getElementById('mp-stock').value) || 0;
+  const obs    = document.getElementById('mp-obs').value.trim();
+  if (!nombre) { alert('Ingresá el nombre del producto.'); return; }
+  try {
+    if (editProdId) {
+      await updateDoc(doc(db,'stock_productos',editProdId), { nombre, categoria:cat, unidad, observaciones:obs });
+      toast('Producto actualizado ✓');
+    } else {
+      const ref = await addDoc(collection(db,'stock_productos'), {
+        nombre, categoria:cat, unidad, observaciones:obs,
+        stockActual: stockI,
+        ultimoMovimiento: stockI > 0 ? hoy() : null,
+        creadoEn: hoy()
+      });
+      if (stockI > 0) {
+        await addDoc(collection(db,'stock_movimientos'), {
+          tipo:'entrada', fecha:hoy(), productoId:ref.id,
+          nombreProducto:nombre, categoriaProducto:cat,
+          unidad, cantidad:stockI, observacion:'Stock inicial'
+        });
+      }
+      toast('Producto creado ✓');
+    }
+    cerrarModal('modal-producto');
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+window.eliminarProducto = async function(id, nombre) {
+  if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+  try { await deleteDoc(doc(db,'stock_productos',id)); toast('Producto eliminado'); }
+  catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── Movimiento modal ──
+window.abrirModalMovimiento = function(tipo) {
+  document.getElementById('mm-tipo').value     = tipo;
+  document.getElementById('mm-fecha').value    = hoy();
+  document.getElementById('mm-cat-fil').value  = '';
+  document.getElementById('mm-cantidad').value = '';
+  document.getElementById('mm-unidad').value   = '';
+  document.getElementById('mm-obs').value      = '';
+  filtrarProductosMov();
+  actualizarTituloMov();
+  abrirModal('modal-movimiento');
+};
+
+window.abrirMovDesdeStock = function(prodId, tipo) {
+  abrirModalMovimiento(tipo);
+  const p = productos.find(x => x.id === prodId);
+  if (!p) return;
+  document.getElementById('mm-cat-fil').value = p.categoria;
+  filtrarProductosMov();
+  setTimeout(() => {
+    document.getElementById('mm-producto').value = prodId;
+    document.getElementById('mm-unidad').value   = p.unidad || '';
+  }, 20);
+};
+
+window.filtrarProductosMov = function() {
+  const cat  = document.getElementById('mm-cat-fil').value;
+  const sel  = document.getElementById('mm-producto');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Seleccioná un producto —</option>';
+  let lista = productos.slice().sort((a,b) => a.nombre.localeCompare(b.nombre));
+  if (cat) lista = lista.filter(p => p.categoria === cat);
+  lista.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    const st = (p.stockActual||0).toLocaleString('es-AR');
+    opt.textContent = `${p.nombre}  (${st} ${p.unidad||''})`;
+    sel.appendChild(opt);
+  });
+  if (prev) sel.value = prev;
+};
+
+window.autoUnidad = function() {
+  const p = productos.find(x => x.id === document.getElementById('mm-producto').value);
+  document.getElementById('mm-unidad').value = p ? (p.unidad||'') : '';
+};
+
+window.actualizarTituloMov = function() {
+  const t = document.getElementById('mm-tipo').value;
+  document.getElementById('mm-titulo').textContent = t === 'entrada' ? 'Registrar entrada' : 'Registrar salida';
+  document.getElementById('mm-btn').textContent = t === 'entrada' ? 'Registrar entrada' : 'Registrar salida';
+};
+
+window.guardarMovimiento = async function() {
+  const tipo     = document.getElementById('mm-tipo').value;
+  const fecha    = document.getElementById('mm-fecha').value;
+  const prodId   = document.getElementById('mm-producto').value;
+  const cantidad = parseFloat(document.getElementById('mm-cantidad').value);
+  const obs      = document.getElementById('mm-obs').value.trim();
+  if (!prodId)            { alert('Seleccioná un producto.'); return; }
+  if (!fecha)             { alert('Ingresá la fecha.'); return; }
+  if (!cantidad || cantidad <= 0) { alert('Ingresá una cantidad válida.'); return; }
+  const p = productos.find(x => x.id === prodId);
+  if (!p) return;
+  const delta     = tipo === 'entrada' ? cantidad : -cantidad;
+  const nuevoSt   = (p.stockActual||0) + delta;
+  if (tipo === 'salida' && nuevoSt < 0) {
+    if (!confirm(`El stock quedaría en ${nuevoSt.toLocaleString('es-AR')} ${p.unidad||''}. ¿Continuás?`)) return;
+  }
+  try {
+    await addDoc(collection(db,'stock_movimientos'), {
+      tipo, fecha, productoId:prodId,
+      nombreProducto:p.nombre, categoriaProducto:p.categoria,
+      unidad:p.unidad||'', cantidad, observacion:obs
+    });
+    await updateDoc(doc(db,'stock_productos',prodId), { stockActual:nuevoSt, ultimoMovimiento:fecha });
+    toast(tipo === 'entrada' ? '⬆ Entrada registrada ✓' : '⬇ Salida registrada ✓');
+    cerrarModal('modal-movimiento');
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── Editar movimiento ──
+window.abrirEditMovimiento = function(id) {
+  const m = movimientos.find(x => x.id === id);
+  if (!m) return;
+  editMovId = id;
+  document.getElementById('em-fecha').value    = m.fecha || hoy();
+  document.getElementById('em-cantidad').value = m.cantidad || '';
+  document.getElementById('em-obs').value      = m.observacion || '';
+  abrirModal('modal-edit-mov');
+};
+
+window.guardarEditMovimiento = async function() {
+  const m = movimientos.find(x => x.id === editMovId);
+  if (!m) return;
+  const nf = document.getElementById('em-fecha').value;
+  const nc = parseFloat(document.getElementById('em-cantidad').value);
+  const no = document.getElementById('em-obs').value.trim();
+  if (!nf || !nc || nc <= 0) { alert('Completá todos los campos.'); return; }
+  try {
+    const p = productos.find(x => x.id === m.productoId);
+    if (p) {
+      const delta = m.tipo === 'entrada' ? (nc - m.cantidad) : (m.cantidad - nc);
+      await updateDoc(doc(db,'stock_productos',m.productoId), {
+        stockActual: (p.stockActual||0) + delta, ultimoMovimiento: nf
+      });
+    }
+    await updateDoc(doc(db,'stock_movimientos',editMovId), { fecha:nf, cantidad:nc, observacion:no });
+    toast('Movimiento actualizado ✓');
+    cerrarModal('modal-edit-mov');
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+window.eliminarMovimiento = async function(id, nombre, prodId, deltaRev) {
+  if (!confirm(`¿Eliminar este movimiento de "${nombre}"? El stock se ajustará.`)) return;
+  try {
+    const p = productos.find(x => x.id === prodId);
+    if (p) await updateDoc(doc(db,'stock_productos',prodId), { stockActual:(p.stockActual||0)+deltaRev });
+    await deleteDoc(doc(db,'stock_movimientos',id));
+    toast('Movimiento eliminado');
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+// ── Listeners ──
+dot('loading');
+onSnapshot(query(collection(db,'stock_productos'), orderBy('nombre')), snap => {
+  dot('online');
+  productos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  renderStats(); renderStock(); filtrarProductosMov();
+}, () => dot('offline'));
+
+onSnapshot(query(collection(db,'stock_movimientos'), orderBy('fecha','desc')), snap => {
+  movimientos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  renderStats(); renderMovimientos();
+});
+</script>
+</body>
+</html>
