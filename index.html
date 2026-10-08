@@ -242,7 +242,6 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
             <th>Producto</th>
             <th>Cantidad</th>
             <th class="hide-mobile">Observación</th>
-            <th></th>
           </tr>
         </thead>
         <tbody id="tbody-movimientos">
@@ -349,28 +348,6 @@ tbody td { padding: 11px 14px; vertical-align: middle; }
   </div>
 </div>
 
-<!-- ── Modal Editar Movimiento ── -->
-<div class="modal-backdrop hidden" id="modal-edit-mov">
-  <div class="modal">
-    <div class="modal-title">Editar movimiento</div>
-    <div class="form-row">
-      <label class="form-label">Fecha *</label>
-      <input class="form-input" type="date" id="em-fecha">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Cantidad *</label>
-      <input class="form-input" type="number" id="em-cantidad" min="0.01" step="any">
-    </div>
-    <div class="form-row">
-      <label class="form-label">Observación</label>
-      <textarea class="form-textarea" id="em-obs"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="cerrarModal('modal-edit-mov')">Cancelar</button>
-      <button class="btn btn-green" onclick="guardarEditMovimiento()">Guardar</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -518,10 +495,6 @@ window.renderMovimientos = function() {
       <td>${qty}</td>
       <td class="hide-mobile" style="font-size:12px;color:#888780;max-width:200px;word-break:break-word">${m.observacion||'—'}</td>
       <td>
-        <div class="row-actions">
-          <button class="icon-btn" title="Editar" onclick="abrirEditMovimiento('${m.id}')">✏️</button>
-          <button class="icon-btn del" title="Eliminar" onclick="eliminarMovimiento('${m.id}','${safe}','${m.productoId||''}',${deltaRev})">🗑</button>
-        </div>
       </td>
     </tr>`;
   }).join('');
